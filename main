@@ -1,0 +1,91 @@
+import pygame
+import sys
+import random
+from game import Game
+
+pygame.init()
+
+SCREEN_WIGHT = 750
+SCREEN_HEIGHT = 700
+OFFSET = 50
+
+GREY = (29, 29, 27)
+GREEN = (0, 255, 90)
+
+FONT = pygame.font.Font('Font/monogram.ttf', 40)
+surface = FONT.render('STAGE ', False, GREEN)
+game_over = FONT.render('GAME OVER', False, GREEN)
+score = FONT.render('SCORE', False, GREEN)
+highscore = FONT.render('HIGHSCORE', False, GREEN)
+
+screen = pygame.display.set_mode((SCREEN_WIGHT + OFFSET, SCREEN_HEIGHT + 2 * OFFSET))
+pygame.display.set_caption('Space invaders')
+
+clock = pygame.time.Clock()
+
+game = Game(SCREEN_WIGHT, SCREEN_HEIGHT, OFFSET)
+
+SHOOT_LASER = pygame.USEREVENT
+pygame.time.set_timer(SHOOT_LASER, 400)
+
+MYSTERYSHIP = pygame.USEREVENT + 1
+pygame.time.set_timer(MYSTERYSHIP, random.randint(15000, 20000))
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == SHOOT_LASER and game.run:
+            game.alien_shoot_laser()
+        if event.type == MYSTERYSHIP and game.run:
+            game.create_mystery_ship()
+            pygame.time.set_timer(MYSTERYSHIP, random.randint(4000, 8000))
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_SPACE] and game.run == False:
+            game.reset()
+
+    if game.run:
+        game.spaceship_group.update()
+        game.move_aliens()
+        game.alien_lasers_group.update()
+        game.mystery_ship_group.update()
+        game.check_collision()
+        game.check_level_complete()
+
+    screen.fill(GREY)
+    pygame.draw.line(screen, GREEN, (25, 730), (775, 730), 3)
+
+    if game.run:
+        screen.blit(surface, (570, 740, 50, 50))
+        form_stage = str(game.stage).zfill(2)
+        stage_surf = FONT.render(form_stage, False, GREEN)
+        screen.blit(stage_surf, (650, 740, 50, 50))
+    else:
+        screen.blit(game_over, (570, 740, 50, 50))
+    x = 55
+    for life in range(game.lives):
+        screen.blit(game.spaceship_group.sprite.image, (x, 740))
+        x += 55
+
+    screen.blit(score, (50, 15, 50, 50))
+    form_score = str(game.score).zfill(5)
+    score_surf = FONT.render(form_score, False, GREEN)
+    screen.blit(score_surf, (50, 40, 50, 50))
+    screen.blit(highscore, (550, 15, 50, 50))
+    form_highscore = str(game.highscore).zfill(5)
+    highscore_surf = FONT.render(form_highscore, False, GREEN)
+    screen.blit(highscore_surf, (610, 40, 50, 50))
+
+
+    game.spaceship_group.draw(screen)
+    game.spaceship_group.sprite.lasers_group.draw(screen)
+    for object in game.objects:
+        object.blocks_group.draw(screen)
+    game.aliens_group.draw(screen)
+    game.alien_lasers_group.draw(screen)
+    game.mystery_ship_group.draw(screen)
+
+    pygame.display.update()
+    clock.tick(60)
